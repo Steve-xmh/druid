@@ -299,7 +299,7 @@ impl WindowBuilder {
         window.set_decorated(self.show_titlebar);
         let mut transparent = false;
         if self.transparent {
-            if let Some(screen) = gtk::prelude::GtkWindowExt::screen(&window) {
+            if let Some(screen) = window.screen() {
                 let visual = screen.rgba_visual();
                 transparent = visual.is_some();
                 window.set_visual(visual.as_ref());
@@ -1103,12 +1103,12 @@ impl WindowHandle {
                 Some(region) => {
                     let cairo_region = cairo::Region::create();
                     for contained_rect in region.rects() {
-                        let cairo_rect = cairo::RectangleInt::new(
-                            contained_rect.x0.floor() as i32,
-                            contained_rect.y0.floor() as i32,
-                            contained_rect.width().ceil() as i32,
-                            contained_rect.height().ceil() as i32,
-                        );
+                        let cairo_rect = cairo::RectangleInt {
+                            x: contained_rect.x0.floor() as i32,
+                            y: contained_rect.y0.floor() as i32,
+                            width: contained_rect.width().ceil() as i32,
+                            height: contained_rect.height().ceil() as i32,
+                        };
                         let union_result = cairo_region.union_rectangle(&cairo_rect);
                         if union_result.is_err() {
                             warn!(

@@ -19,7 +19,7 @@ use std::ffi::OsString;
 use anyhow::anyhow;
 use gtk::{FileChooserAction, FileFilter, ResponseType, Window};
 
-use gtk::prelude::{FileChooserExt, NativeDialogExt};
+use gtk::prelude::{FileChooserExt, WidgetExtManual, DialogExt};
 
 use crate::dialog::{FileDialogOptions, FileDialogType, FileSpec};
 use crate::Error;
@@ -47,12 +47,12 @@ pub(crate) fn get_file_dialog_path(
     };
     let title = options.title.as_deref().unwrap_or(title);
 
-    let mut dialog = gtk::FileChooserNative::builder()
+    let dialog = gtk::FileChooserDialog::builder()
         .transient_for(window)
         .title(title);
-    if let Some(button_text) = &options.button_text {
-        dialog = dialog.accept_label(button_text);
-    }
+    // if let Some(button_text) = &options.button_text {
+    //     dialog = dialog.accept_label(button_text);
+    // }
     let dialog = dialog.build();
 
     dialog.set_action(action);
@@ -119,7 +119,9 @@ pub(crate) fn get_file_dialog_path(
 
     // TODO properly handle errors into the Error type
 
-    dialog.destroy();
+    unsafe {
+        dialog.destroy();
+    }
 
     Ok(result?)
 }
