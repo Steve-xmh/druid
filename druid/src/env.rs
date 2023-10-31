@@ -23,6 +23,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use crate::kurbo::RoundedRectRadii;
+#[cfg(feature = "l10n")]
 use crate::localization::L10nManager;
 use crate::text::FontDescriptor;
 use crate::{ArcStr, Color, Data, Insets, Point, Rect, Size};
@@ -54,6 +55,7 @@ pub struct Env(Arc<EnvImpl>);
 #[derive(Debug, Clone)]
 struct EnvImpl {
     map: HashMap<ArcStr, Value>,
+    #[cfg(feature = "l10n")]
     l10n: Option<Arc<L10nManager>>,
 }
 
@@ -340,6 +342,7 @@ impl Env {
     /// resources.
     ///
     /// This always exists on the base `Env` configured by Druid.
+    #[cfg(feature = "l10n")]
     pub(crate) fn localization_manager(&self) -> Option<&L10nManager> {
         self.0.l10n.as_deref()
     }
@@ -354,10 +357,17 @@ impl Env {
 
 impl std::fmt::Debug for Env {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("Env")
-            .field("l10n", &self.0.l10n)
-            .field("map", &self.0.map)
-            .finish()
+        #[cfg(feature = "l10n")]
+        {
+            f.debug_struct("Env")
+                .field("l10n", &self.0.l10n)
+                .field("map", &self.0.map)
+                .finish()
+        }
+        #[cfg(not(feature = "l10n"))]
+        {
+            f.debug_struct("Env").field("map", &self.0.map).finish()
+        }
     }
 }
 
@@ -502,6 +512,7 @@ impl Env {
     /// This is useful for creating a set of overrides.
     pub fn empty() -> Self {
         Env(Arc::new(EnvImpl {
+            #[cfg(feature = "l10n")]
             l10n: None,
             map: HashMap::new(),
         }))
@@ -512,9 +523,11 @@ impl Env {
     }
 
     pub(crate) fn with_i10n(resources: Vec<String>, base_dir: &str) -> Self {
+        #[cfg(feature = "l10n")]
         let l10n = L10nManager::new(resources, base_dir);
 
         let inner = EnvImpl {
+            #[cfg(feature = "l10n")]
             l10n: Some(Arc::new(l10n)),
             map: HashMap::new(),
         };

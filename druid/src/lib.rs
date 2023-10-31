@@ -188,6 +188,8 @@ mod dialog;
 pub mod env;
 mod event;
 mod ext_event;
+
+#[cfg(feature = "l10n")]
 mod localization;
 pub mod menu;
 mod mouse;
@@ -232,6 +234,7 @@ pub use env::{Env, Key, KeyOrValue, Value, ValueType, ValueTypeError};
 pub use event::{Event, InternalEvent, InternalLifeCycle, LifeCycle, ViewContext};
 pub use ext_event::{ExtEventError, ExtEventSink};
 pub use lens::{Lens, LensExt};
+#[cfg(feature = "l10n")]
 pub use localization::LocalizedString;
 #[doc(inline)]
 pub use menu::{sys as platform_menus, Menu, MenuItem};

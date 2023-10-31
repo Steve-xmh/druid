@@ -19,7 +19,7 @@ use std::ffi::OsString;
 use anyhow::anyhow;
 use gtk::{FileChooserAction, FileFilter, ResponseType, Window};
 
-use gtk::prelude::{FileChooserExt, WidgetExtManual, DialogExt};
+use gtk::prelude::{DialogExt, FileChooserExt, WidgetExtManual};
 
 use crate::dialog::{FileDialogOptions, FileDialogType, FileSpec};
 use crate::Error;

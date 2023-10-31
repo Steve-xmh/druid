@@ -24,10 +24,9 @@ use crate::kurbo::Vec2;
 use crate::text::TextStorage;
 use crate::widget::prelude::*;
 use crate::widget::Axis;
-use crate::{
-    ArcStr, Color, Data, FontDescriptor, KeyOrValue, LocalizedString, Point, TextAlignment,
-    TextLayout,
-};
+#[cfg(feature = "l10n")]
+use crate::LocalizedString;
+use crate::{ArcStr, Color, Data, FontDescriptor, KeyOrValue, Point, TextAlignment, TextLayout};
 use tracing::{instrument, trace, warn};
 
 // added padding between the edges of the widget and the text.
@@ -115,6 +114,7 @@ pub enum LineBreaking {
 #[derive(Clone)]
 pub enum LabelText<T> {
     /// Localized string that will be resolved through `Env`.
+    #[cfg(feature = "l10n")]
     Localized(LocalizedString<T>),
     /// Static text.
     Static(Static),
@@ -447,6 +447,7 @@ impl<T: Data> LabelText<T> {
     pub fn with_display_text<V>(&self, mut cb: impl FnMut(&str) -> V) -> V {
         match self {
             LabelText::Static(s) => cb(&s.string),
+            #[cfg(feature = "l10n")]
             LabelText::Localized(s) => cb(&s.localized_str()),
             LabelText::Dynamic(s) => cb(&s.resolved),
         }
@@ -456,6 +457,7 @@ impl<T: Data> LabelText<T> {
     pub fn display_text(&self) -> ArcStr {
         match self {
             LabelText::Static(s) => s.string.clone(),
+            #[cfg(feature = "l10n")]
             LabelText::Localized(s) => s.localized_str(),
             LabelText::Dynamic(s) => s.resolved.clone(),
         }
@@ -468,6 +470,7 @@ impl<T: Data> LabelText<T> {
     pub fn resolve(&mut self, data: &T, env: &Env) -> bool {
         match self {
             LabelText::Static(s) => s.resolve(),
+            #[cfg(feature = "l10n")]
             LabelText::Localized(s) => s.resolve(data, env),
             LabelText::Dynamic(s) => s.resolve(data, env),
         }
@@ -709,6 +712,7 @@ impl<T> From<ArcStr> for LabelText<T> {
     }
 }
 
+#[cfg(feature = "l10n")]
 impl<T> From<LocalizedString<T>> for LabelText<T> {
     fn from(src: LocalizedString<T>) -> LabelText<T> {
         LabelText::Localized(src)

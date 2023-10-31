@@ -21,7 +21,9 @@ use crate::shell::{Application, Error as PlatformError, WindowBuilder, WindowHan
 use crate::widget::LabelText;
 use crate::win_handler::{AppHandler, AppState};
 use crate::window::WindowId;
-use crate::{AppDelegate, Data, Env, LocalizedString, Menu, Widget};
+#[cfg(feature = "l10n")]
+use crate::LocalizedString;
+use crate::{AppDelegate, Data, Env, Menu, Widget};
 
 use tracing::warn;
 
@@ -104,7 +106,16 @@ impl<T: Data> PendingWindow<T> {
         // This just makes our API slightly cleaner; callers don't need to explicitly box.
         PendingWindow {
             root: Box::new(root),
-            title: LocalizedString::new("app-name").into(),
+            title: {
+                #[cfg(feature = "l10n")]
+                {
+                    LocalizedString::new("app-name").into()
+                }
+                #[cfg(not(feature = "l10n"))]
+                {
+                    "app-name".into()
+                }
+            },
             menu: MenuManager::platform_default(),
             transparent: false,
             size_policy: WindowSizePolicy::User,
