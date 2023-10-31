@@ -17,7 +17,7 @@
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-use druid_shell::Cursor;
+use druid_shell::{piet::OverflowMethod, Cursor};
 
 use crate::debug_state::DebugState;
 use crate::kurbo::Vec2;
@@ -103,6 +103,8 @@ pub enum LineBreaking {
     Clip,
     /// Lines overflow the label.
     Overflow,
+    /// Ellipsis are added to the end of the line.
+    Ellipsis,
 }
 
 /// The text for a [`Label`].
@@ -247,6 +249,17 @@ impl<T: TextStorage> RawLabel<T> {
     /// [`request_layout`]: EventCtx::request_layout
     pub fn set_line_break_mode(&mut self, mode: LineBreaking) {
         self.line_break_mode = mode;
+        match mode {
+            LineBreaking::Ellipsis => {
+                self.layout.set_overflow(OverflowMethod::Ellipsis);
+            }
+            LineBreaking::Clip => {
+                self.layout.set_overflow(OverflowMethod::Clip);
+            }
+            _ => {
+                self.layout.set_overflow(OverflowMethod::Default);
+            }
+        }
     }
 
     /// Set the [`TextAlignment`] for this layout.
@@ -591,9 +604,20 @@ impl<T: TextStorage> Widget<T> for RawLabel<T> {
         bc.debug_check("Label");
 
         let width = match self.line_break_mode {
-            LineBreaking::WordWrap => bc.max().width - LABEL_X_PADDING * 2.0,
+            LineBreaking::WordWrap | LineBreaking::Ellipsis => {
+                bc.max().width - LABEL_X_PADDING * 2.0
+            }
             _ => f64::INFINITY,
         };
+
+        match self.line_break_mode {
+            LineBreaking::Ellipsis => {
+                self.layout.set_max_height(bc.max().height);
+            }
+            _ => {
+                self.layout.set_max_height(f64::INFINITY);
+            }
+        }
 
         self.layout.set_wrap_width(width);
         self.layout.rebuild_if_needed(ctx.text(), env);

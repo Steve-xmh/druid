@@ -17,6 +17,8 @@
 use std::ops::Range;
 use std::rc::Rc;
 
+use druid_shell::piet::OverflowMethod;
+
 use super::{EnvUpdateCtx, Link, TextStorage};
 use crate::kurbo::{Line, Point, Rect, Size};
 use crate::piet::{
@@ -54,6 +56,8 @@ pub struct TextLayout<T> {
     text_color: KeyOrValue<Color>,
     layout: Option<PietTextLayout>,
     wrap_width: f64,
+    max_height: f64,
+    overflow: OverflowMethod,
     alignment: TextAlignment,
     links: Rc<[(Rect, usize)]>,
     text_is_rtl: bool,
@@ -85,6 +89,8 @@ impl<T> TextLayout<T> {
             text_size_override: None,
             layout: None,
             wrap_width: f64::INFINITY,
+            max_height: f64::INFINITY,
+            overflow: OverflowMethod::default(),
             alignment: Default::default(),
             links: Rc::new([]),
             text_is_rtl: false,
@@ -137,6 +143,26 @@ impl<T> TextLayout<T> {
         // 1e-4 is an arbitrary small-enough value that we don't care to rewrap
         if (width - self.wrap_width).abs() > 1e-4 {
             self.wrap_width = width;
+            self.layout = None;
+        }
+    }
+
+    /// Set the height at which to wrap words.
+    ///
+    /// You may pass `f64::INFINITY` to disable word wrapping
+    /// (the default behaviour).
+    pub fn set_max_height(&mut self, height: f64) {
+        let height = height.max(0.0);
+        if (height - self.max_height).abs() > 1e-4 {
+            self.max_height = height;
+            self.layout = None;
+        }
+    }
+
+    /// Set the [`OverflowMethod`] for this layout.
+    pub fn set_overflow(&mut self, overflow: OverflowMethod) {
+        if self.overflow != overflow {
+            self.overflow = overflow;
             self.layout = None;
         }
     }
@@ -381,6 +407,8 @@ impl<T: TextStorage> TextLayout<T> {
                 let builder = factory
                     .new_text_layout(text.clone())
                     .max_width(self.wrap_width)
+                    .max_height(self.max_height)
+                    .overflow(self.overflow)
                     .alignment(self.alignment)
                     .font(descriptor.family.clone(), descriptor.size)
                     .default_attribute(descriptor.weight)
