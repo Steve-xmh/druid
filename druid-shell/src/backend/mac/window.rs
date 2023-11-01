@@ -173,6 +173,7 @@ struct ViewState {
     nsview: WeakPtr,
     handler: Box<dyn WinHandler>,
     idle_queue: Arc<Mutex<Vec<IdleKind>>>,
+    handle_titlebar: bool,
     /// Tracks window focusing left clicks
     focus_click: bool,
     // Tracks whether we have already received the mouseExited event
@@ -591,6 +592,7 @@ fn make_view(handler: Box<dyn WinHandler>) -> (id, Weak<Mutex<Vec<IdleKind>>>) {
             handler,
             idle_queue,
             focus_click: false,
+            handle_titlebar: false,
             mouse_left: true,
             keyboard_state,
             text: PietText::new_with_unique_state(),
@@ -709,10 +711,18 @@ fn mouse_down(this: &mut Object, nsevent: id, button: MouseButton) {
     unsafe {
         let view_state: *mut c_void = *this.get_ivar("viewState");
         let view_state = &mut *(view_state as *mut ViewState);
-        let count = nsevent.clickCount() as u8;
-        let focus = view_state.focus_click && button == MouseButton::Left;
-        let event = mouse_event(nsevent, this as id, count, focus, button, Vec2::ZERO);
-        view_state.handler.mouse_down(&event);
+
+        if view_state.handle_titlebar {
+            view_state.handle_titlebar = false;
+
+            let window: id = msg_send![this, window];
+            let () = msg_send![window, performWindowDragWithEvent: nsevent];
+        } else {
+            let count = nsevent.clickCount() as u8;
+            let focus = view_state.focus_click && button == MouseButton::Left;
+            let event = mouse_event(nsevent, this as id, count, focus, button, Vec2::ZERO);
+            view_state.handler.mouse_down(&event);
+        }
     }
 }
 
@@ -1404,8 +1414,15 @@ impl WindowHandle {
         }
     }
 
-    pub fn handle_titlebar(&self, _val: bool) {
-        tracing::warn!("WindowHandle::handle_titlebar is currently unimplemented for Mac.");
+    pub fn handle_titlebar(&self, val: bool) {
+        // tracing::warn!("WindowHandle::handle_titlebar is currently unimplemented for Mac.");
+        unsafe {
+            if let Some(view) = self.nsview.load().as_ref() {
+                let view_state: *mut c_void = *view.get_ivar("viewState");
+                let view_state = &mut *(view_state as *mut ViewState);
+                view_state.handle_titlebar = val;
+            }
+        }
     }
 
     pub fn resizable(&self, resizable: bool) {
