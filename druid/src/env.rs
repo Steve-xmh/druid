@@ -522,6 +522,7 @@ impl Env {
         Env::with_i10n(vec!["builtin.ftl".into()], "./resources/i18n/")
     }
 
+    #[allow(unused_variables)]
     pub(crate) fn with_i10n(resources: Vec<String>, base_dir: &str) -> Self {
         #[cfg(feature = "l10n")]
         let l10n = L10nManager::new(resources, base_dir);
