@@ -44,7 +44,9 @@ use instant::Duration;
 use tracing::{error, warn};
 
 #[cfg(feature = "raw-win-handle")]
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle, XcbWindowHandle};
+use raw_window_handle::{
+    HasRawWindowHandle, RawWindowHandle, WaylandWindowHandle, XcbWindowHandle,
+};
 
 use crate::kurbo::{Insets, Point, Rect, Size, Vec2};
 use crate::piet::{Piet, PietText, RenderContext};
@@ -124,7 +126,22 @@ impl Eq for WindowHandle {}
 #[cfg(feature = "raw-win-handle")]
 unsafe impl HasRawWindowHandle for WindowHandle {
     fn raw_window_handle(&self) -> RawWindowHandle {
-        error!("HasRawWindowHandle trait not implemented for gtk.");
+        if let Some(state) = self.state.upgrade() {
+            if let Some(gdk_win) = state.window.window() {
+                if let Some(x11_win) = gdk_win.downcast_ref::<gdkx11::X11Window>() {
+                    let xid = x11_win.xid();
+                    let mut handle = XcbWindowHandle::empty();
+                    handle.window = xid as _;
+                    return RawWindowHandle::Xcb(handle);
+                } else if let Some(wl_win) = gdk_win.downcast_ref::<gdkwayland::WaylandWindow>() {
+                    let mut handle = WaylandWindowHandle::empty();
+                    handle.surface = unsafe {
+                        gdkwayland::ffi::gdk_wayland_window_get_wl_surface(wl_win.as_ptr())
+                    };
+                    return RawWindowHandle::Wayland(handle);
+                }
+            }
+        }
         // GTK is not a platform, and there's no empty generic handle. Pick XCB randomly as fallback.
         RawWindowHandle::Xcb(XcbWindowHandle::empty())
     }

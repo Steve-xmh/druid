@@ -18,7 +18,7 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [features]
 default = ["gtk"]
-gtk = ["gdk-sys", "glib-sys", "gtk-sys", "gtk-rs"]
+gtk = ["gdk-sys", "gdkx11", "gdkwayland", "glib-sys", "gtk-sys", "gtk-rs"]
 x11 = [
     "ashpd",
     "bindgen",
@@ -104,6 +104,8 @@ cairo-rs = { version = "^0.15", default-features = false, features = ["xcb"] }
 cairo-sys-rs = { version = "^0.15", default-features = false, optional = true }
 futures = { version = "0.3.26", optional = true, features = ["executor"]}
 gdk-sys = { version = "^0.15", optional = true }
+gdkx11 = { version = "^0.15", optional = true }
+gdkwayland = { version = "^0.15", optional = true }
 # `gtk` gets renamed to `gtk-rs` so that we can use `gtk` as the feature name.
 gtk-rs = { version = "^0.15", package = "gtk", optional = true }
 gdk = { version = "^0.15", optional = false, features = ["v3_22"] }
